@@ -60,7 +60,7 @@ function onDrop (source, target) {
 // update the board position after the piece snap
 // for castling, en passant, pawn promotion
 function onSnapEnd () {
-  board.position(game.fen())
+  board.position(game.fen());
 }
 function updateStatus () {
   var status = ''
@@ -98,7 +98,6 @@ function updateStatus () {
     var dateNow = new Date();
     var timeDifference = (dateNow-dateBefore)/1000;
     console.log("Time taken in seconds: "+timeDifference+ " s");
-    updateStatus();
   }
 
   $status.html(status)
@@ -114,8 +113,9 @@ var config = {
 }
 board = Chessboard('myBoard', config);
 
-//game.load("rnb1k1nr/pppp1ppp/5q2/2b1p3/8/PPN5/2PPPPPP/R1BQKBNR w KQkq - 0 1");
-//board.position(game.fen());
+game.load("k7/8/8/8/8/8/8/3r3K w - - 0 1");
+board.position(game.fen());
+console.log(game.moves({verbose: true}));
 
 updateStatus();
     </script>

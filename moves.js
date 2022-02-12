@@ -1,5 +1,4 @@
-var capValue = {q: 20000, r: 10000, b: 5000, n: 3000, p: 1000};
-var takenByValue = {q: 100, r: 50, b: 30, n: 20, p: 10};
+var MVVALVATable = initMMVLVATable();
 
 function generateMoves(game, hash){
     var moveList = game.moves({verbose: true});
@@ -19,6 +18,17 @@ function generateMoves(game, hash){
     return orderMovesBasedOnScore(scoredMoveList);
 }
 
+function generateCaptures(game){
+    var moveList = game.moves({verbose: true});
+    var capMoveList = [];
+    for(var i = 0; i<moveList.length; i++){
+        if(moveList[i].captured){
+            capMoveList.push(moveList[i]);
+        }
+    }
+    return capMoveList;
+}
+
 function MVVLVA(moveList){
     for(var i = 0; i<moveList.length; i++){
         if(moveList[i].move.captured){
@@ -35,6 +45,7 @@ function createScoredMoveList(moveList){
     return scoredMoveList
 }
 
+/* Maybe don't need to sort because on the first few it will stop */
 function orderMovesBasedOnScore(moveList){
     var orderedList = [];
     while(moveList.length){
@@ -52,4 +63,22 @@ function orderMovesBasedOnScore(moveList){
         moveList.splice(bestMoveSpot, 1);
     }
     return orderedList
+}
+
+function initMMVLVATable(){
+    // Do not include king you can never capture it
+    // [captured piece][captured by]
+    var pieceNum = {q: 5, r: 4, b: 3, n: 2, p: 1}
+    var table = {q: [], r: [], b: [], n: [], p: []}
+
+    var pieceArray = ['q','r','b','n','p'];
+
+    for(var i = 0; i<5; i++){
+        var capturedPiece = pieceArray[i];
+        for(var j = 0; j<5; j++){
+            var takingPiece = pieceArray[j];
+            table[capturedPiece][takingPiece] = pieceNum[capturedPiece]*20-pieceNum[takingPiece];
+        }
+    }
+    return table;
 }
