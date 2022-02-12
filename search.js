@@ -32,19 +32,21 @@ function quiescence(alpha, beta, hash, game, blackToMove){
         alpha = score;
     }
 
-    var moves = generateCaptures(game);
+    var moves = generateCaptures(game, hash);
 
     var OldAlpha = alpha;
 	var BestMove = NOMOVE;
 	var move = NOMOVE;
+    var legal = 0;
 
-    for(var moveNum = 0; moveNum<moves.length; moveNum++){
+    while(moves.length){
         /* Set the current move and get it's hash and make it */
-        move = moves[moveNum];
+        move = getNextMove(moves);
 
         /* Get hash of the move */
         var moveHash = move_Hash(move);
         game.move(move.san);
+        legal++;
         
         /* update hash with the move */
         hash = hash ^ moveHash;
@@ -65,7 +67,7 @@ function quiescence(alpha, beta, hash, game, blackToMove){
 
         if(score > alpha){
             if(score >= beta){
-                if(moveNum == 0){
+                if(legal == 1){
                     /* Increase the fail high first value to show our move ordering is good */
                     SearchController.fhf++;
                 }
@@ -103,6 +105,11 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove){
 
     /* Check Rep() Fifty Move Rule */ 
 
+    /* if in check increase depth by one because it does not increase nodes by that much */
+    if(this.game.in_check()){
+        depth++;
+    }
+
     /* set the starting score to negative infinity */
     var score = -INFINITE;
 
@@ -116,17 +123,19 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove){
 	var OldAlpha = alpha;
 	var BestMove = NOMOVE;
 	var move = NOMOVE;
+    var legal = 0;
 
     /* Get PvMove */
 	/* Order PvMove */
 
-    for(var moveNum = 0; moveNum<moves.length; moveNum++){
+    while(moves.length){
         /* Set the current move and get it's hash and make it */
-        move = moves[moveNum];
+        move = move = getNextMove(moves);
 
         /* Get hash of the move */
         var moveHash = move_Hash(move);
         game.move(move.san);
+        legal++;
         
         /* update hash with the move */
         hash = hash ^ moveHash;
@@ -147,7 +156,7 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove){
 
         if(score > alpha){
             if(score >= beta){
-                if(moveNum == 0){
+                if(legal == 1){
                     /* Increase the fail high first value to show our move ordering is good */
                     SearchController.fhf++;
                 }
@@ -165,12 +174,7 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove){
 
     /* Check if current position is in check mate */
     if(game.in_checkmate()){
-        if(blackToMove){
-            return MATE;
-        }
-        else{
-            return -MATE;
-        }
+        return -MATE;
     }
 
     if(alpha != OldAlpha) {
@@ -214,8 +218,10 @@ function searchPosition(game){
         if(currentDepth != 1){
             console.log("Move Ordering is: "+(SearchController.fhf/SearchController.fh)*100 + " %");
         }
+        console.log("Number of nodes visited is: "+SearchController.nodes);
 
         bestMove = probePvTable(startingHash);    
     }
+    console.log("Number of nodes visited is: "+SearchController.nodes);
     game.move(bestMove.san);
 }

@@ -9,16 +9,16 @@ function generateMoves(game, hash){
     if(pvMove != NOMOVE){
         for(var i = 0; i<scoredMoveList.length; i++){
             if(scoredMoveList[i].move == pvMove){
-                scoredMoveList[i].score = 100000; // score of a pv Move
+                scoredMoveList[i].score = 10000000; // score of a pv Move
             }
         }
     }
+    MVVLVA(scoredMoveList); // give score by MVVLVA
 
-    /* Return ordered move list based on score */
-    return orderMovesBasedOnScore(scoredMoveList);
+    return scoredMoveList;
 }
 
-function generateCaptures(game){
+function generateCaptures(game, hash){
     var moveList = game.moves({verbose: true});
     var capMoveList = [];
     for(var i = 0; i<moveList.length; i++){
@@ -26,13 +26,26 @@ function generateCaptures(game){
             capMoveList.push(moveList[i]);
         }
     }
-    return capMoveList;
+    var scoredMoveList = createScoredMoveList(capMoveList);
+    
+    // /* Set the score of the pv move */
+    var pvMove = probePvTable(hash);
+    if(pvMove != NOMOVE){
+        for(var i = 0; i<scoredMoveList.length; i++){
+            if(scoredMoveList[i].move == pvMove){
+                scoredMoveList[i].score = 10000000; // score of a pv Move
+            }
+        }
+    }
+    MVVLVA(scoredMoveList); // give score by MVVLVA
+
+    return scoredMoveList;
 }
 
 function MVVLVA(moveList){
     for(var i = 0; i<moveList.length; i++){
         if(moveList[i].move.captured){
-            moveList[i].score = capValue[moveList[i].move.captured]-takenByValue[moveList[i].piece]; 
+            moveList[i].score = MVVALVATable[moveList[i].move.captured][moveList[i].move.piece]+1000000;
         }
     }
 }
@@ -46,23 +59,19 @@ function createScoredMoveList(moveList){
 }
 
 /* Maybe don't need to sort because on the first few it will stop */
-function orderMovesBasedOnScore(moveList){
-    var orderedList = [];
-    while(moveList.length){
-        var score = moveList[0].score;
-        var bestMove = moveList[0].move;
-        var bestMoveSpot = 0;
-        for(var i = 0; i<moveList.length; i++){
-            if(moveList[i].score > score){
-                score = moveList[i].score;
-                bestMove = moveList[i].move;
-                bestMoveSpot = i;
-            }
+function getNextMove(moveList){
+    var bestMove = moveList[0].move;
+    var bestScore = moveList[0].score;
+    var position = 0;
+    for(var i = 0; i<moveList.length; i++){
+        if(moveList[i].score > bestScore){
+            bestScore = moveList[i].score;
+            bestMove = moveList[i].move;
+            position = i;
         }
-        orderedList.push(bestMove);
-        moveList.splice(bestMoveSpot, 1);
     }
-    return orderedList
+    moveList.splice(position, 1);
+    return bestMove;
 }
 
 function initMMVLVATable(){
