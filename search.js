@@ -89,7 +89,7 @@ function quiescence(alpha, beta, hash, game, blackToMove){
 	return alpha;
 }
 
-function alphaBeta(alpha, beta, depth, hash, game, blackToMove){
+function alphaBeta(alpha, beta, depth, hash, game, blackToMove, ply){
     if ((SearchController.nodes % 2048) == 0) {
 		checkIfTimeIsUp();
 	}
@@ -104,6 +104,9 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove){
     SearchController.nodes++;
 
     /* Check Rep() Fifty Move Rule */ 
+    if(game.in_threefold_repetition()) {
+		return 0;
+	}
 
     /* if in check increase depth by one because it does not increase nodes by that much */
     if(this.game.in_check()){
@@ -140,8 +143,16 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove){
         /* update hash with the move */
         hash = hash ^ moveHash;
 
+        /* increase ply of the game */
+        //ply = ply+1;
+        ply++;
+
         /* Recurse deeper */
-        score = -alphaBeta(-beta, -alpha, depth-1, hash, game, !blackToMove);
+        score = -alphaBeta(-beta, -alpha, depth-1, hash, game, !blackToMove, ply);
+
+        /* decrease ply of the game */
+        //ply = ply -1;
+        ply--;
 
         /* Undo the made move */
         game.undo();
@@ -172,9 +183,15 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove){
         }
     }
 
-    /* Check if current position is in check mate */
+    if(game.in_stalemate()){
+        return 0;
+    }
+    if(game.in_draw()){
+        return 0;
+    }
+
     if(game.in_checkmate()){
-        return -MATE;
+        return -MATE + ply;
     }
 
     if(alpha != OldAlpha) {
@@ -201,12 +218,21 @@ function searchPosition(game){
     var startingHash = hash_fen(game.fen());
     var blackToMove = true;
     var depthToSearchTo = 5;
+    var ply = 1;
 
     clearForSearch();
 
     for(var currentDepth = 1; currentDepth<depthToSearchTo; currentDepth++){
         var bestScore = alphaBeta(-INFINITE, INFINITE, currentDepth, 
-            startingHash, game, blackToMove);
+            startingHash, game, blackToMove, ply);
+
+        console.log("Ply is: "+ply);    
+
+        console.log("Score: "+bestScore );
+
+        if(bestScore == 75000){
+            console.log("A mate was found");
+        }    
 
         if(SearchController.stop == true) {
             console.log("Time Up");
