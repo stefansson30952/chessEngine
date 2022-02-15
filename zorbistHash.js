@@ -24,7 +24,6 @@ function init_zorbist(){
 }
 
 function hash_fen(fen){
-    console.log(fen);
     var currentBoardPosition = 0;
     var hash = 0;
 

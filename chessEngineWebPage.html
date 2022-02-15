@@ -10,6 +10,7 @@
     <script src="zorbistHash.js"></script>
     <script src="evaluate.js"></script>
     <script src="pvTable.js"></script>
+    <script src="transposeTable.js"></script>
     <script src="moves.js"></script>
     <script src="search.js"></script>
 
@@ -18,16 +19,14 @@
     <div id="myBoard" style="width: 400px"></div>
     <label>Status:</label>
     <div id="status"></div>
-    <label>FEN:</label>
-    <div id="fen"></div>
-    <label>PGN:</label>
+    <label>PGN/Moves of the game:</label>
     <div id="pgn"></div>
     <script>
 var board = null
 var game = new Chess()
 var $status = $('#status')
-var $fen = $('#fen')
 var $pgn = $('#pgn')
+var running = 0;
 
 function onDragStart (source, piece, position, orientation) {
   // do not pick up pieces if the game is over
@@ -91,17 +90,26 @@ function updateStatus () {
   }
 
   if(game.turn() === 'b'){
-    var dateBefore = new Date();
+    if(running == 0){
+      running = 1;
+      window.setTimeout(() => {      
+      var dateBefore = new Date();
+      searchPosition(game);
+      board.position(game.fen());
+      running = 0;
+      var dateNow = new Date();
+      var timeDifference = (dateNow-dateBefore)/1000;
+      console.log("Time taken in seconds: "+timeDifference+ " s");
+      updateStatus();
+    }, 50);
+    }
+  }
 
-    searchPosition(game);
-
-    var dateNow = new Date();
-    var timeDifference = (dateNow-dateBefore)/1000;
-    console.log("Time taken in seconds: "+timeDifference+ " s");
+  if(running){
+    status = "Chess Engine is thinking";
   }
 
   $status.html(status)
-  $fen.html(game.fen())
   $pgn.html(game.pgn())
 }
 var config = {
@@ -113,8 +121,14 @@ var config = {
 }
 board = Chessboard('myBoard', config);
 
-game.load("kq6/1r6/8/5B2/6N1/8/r7/7K w - - 0 1");
-board.position(game.fen());
+function searchPromise(game){
+    return new Promise(function(resolve, reject){
+        resolve(searchPosition(game));
+    });
+}
+
+// game.load("kq6/1r6/8/5B2/6N1/8/r7/7K w - - 0 1");
+// board.position(game.fen());
 // console.log(game.moves({verbose: true}));
 
 updateStatus();

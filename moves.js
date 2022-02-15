@@ -1,6 +1,7 @@
 var MVVALVATable = initMMVLVATable();
+var killerMoveTable = [];
 
-function generateMoves(game, hash){
+function generateMoves(game, hash, ply){
     var moveList = game.moves({verbose: true});
     var scoredMoveList = createScoredMoveList(moveList);
     
@@ -8,12 +9,17 @@ function generateMoves(game, hash){
     var pvMove = probePvTable(hash);
     if(pvMove != NOMOVE){
         for(var i = 0; i<scoredMoveList.length; i++){
-            if(scoredMoveList[i].move == pvMove){
-                scoredMoveList[i].score = 10000000; // score of a pv Move
+            if(scoredMoveList[i].move.san == pvMove.san){
+                scoredMoveList[i].score = 100000000; // score of a pv Move
             }
         }
     }
+
+    transposeMoveOrdering(hash, scoredMoveList);
+
     MVVLVA(scoredMoveList); // give score by MVVLVA
+
+    //killerMoveOrdering(scoredMoveList, ply);
 
     return scoredMoveList;
 }
@@ -37,15 +43,42 @@ function generateCaptures(game, hash){
             }
         }
     }
+
+    transposeMoveOrdering(hash, scoredMoveList);
+
     MVVLVA(scoredMoveList); // give score by MVVLVA
 
     return scoredMoveList;
+}
+
+function transposeMoveOrdering(hash, scoredMoveList){
+    if(transposeTable.has(hash)){
+        var transposeMove = transposeTable.get(hash);
+        for(var i = 0; i<scoredMoveList.length; i++){
+            if(scoredMoveList[i].move.san == transposeMove.san){
+                scoredMoveList[i].score = Math.max(10000000, scoredMoveList[i].score); // score a transpose move
+            }
+        }
+    }
 }
 
 function MVVLVA(moveList){
     for(var i = 0; i<moveList.length; i++){
         if(moveList[i].move.captured){
             moveList[i].score = MVVALVATable[moveList[i].move.captured][moveList[i].move.piece]+1000000;
+        }
+    }
+}
+
+function killerMoveOrdering(moveList, ply){
+    var killerMoves = killerMoveTable[ply];
+    for(var i = 0; i<killerMoves.length; i++){
+        var move = killerMoves[i];
+        for(var j = 0; j<moveList.length; j++){
+            if(moveList[i].move.san == move.san){
+                moveList[i].score = 10000-i;
+                break;
+            }
         }
     }
 }
@@ -90,4 +123,31 @@ function initMMVLVATable(){
         }
     }
     return table;
+}
+
+function initKillerMoveTable(){
+    for(var i = 0; i<maxDepth; i++){
+        var moveArray = [];
+        killerMoveTable[i] = moveArray;
+    }
+}
+
+function updateKillerMoveTable(ply, move){
+    if(move.captured){
+        return;
+    }
+
+    if(killerMoveTable[ply].length){
+        if(killerMoveTable[ply].length == 2){
+            var newSecondMove = killerMoveTable[ply].shift();
+            killerMoveTable[ply][0] = move;
+            killerMoveTable[ply][1] = newSecondMove;
+        }
+        else{
+            killerMoveTable[ply].unshift(move);
+        }
+    }
+    else{
+        killerMoveTable[ply].push(move);
+    }
 }

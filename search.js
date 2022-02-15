@@ -97,7 +97,6 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove, ply){
     /* If depth is zero return the evaluation of the board */
     if(depth <= 0){
         return quiescence(alpha, beta, hash, game, blackToMove);
-        //return evaluate(game.fen(), blackToMove);
     }
 
     /* Increase total nodes visited */
@@ -116,11 +115,8 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove, ply){
     /* set the starting score to negative infinity */
     var score = -INFINITE;
 
-    /* Get all legal moves */
-    //var moves = game.moves({verbose: true});
-
     /* Get all legal ordered moves */
-    var moves = generateMoves(game, hash);
+    var moves = generateMoves(game, hash, ply);
 
     /* Starting best move is no move */
 	var OldAlpha = alpha;
@@ -144,14 +140,12 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove, ply){
         hash = hash ^ moveHash;
 
         /* increase ply of the game */
-        //ply = ply+1;
         ply++;
 
         /* Recurse deeper */
         score = -alphaBeta(-beta, -alpha, depth-1, hash, game, !blackToMove, ply);
 
         /* decrease ply of the game */
-        //ply = ply -1;
         ply--;
 
         /* Undo the made move */
@@ -173,7 +167,11 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove, ply){
                 }
                 /* Update fail high counter */
                 SearchController.fh++;
+                
                 /* Update Killer Moves */
+                //updateKillerMoveTable(ply,move);
+
+                insertIntoTransposeTable(hash, move);
                 return beta;
             }
             /* New score is alpha and update the best move */
@@ -204,6 +202,8 @@ function alphaBeta(alpha, beta, depth, hash, game, blackToMove, ply){
 
 function clearForSearch() {
     ClearPvTable();
+    //initKillerMoveTable();
+    //clearTransposeTable();
     SearchController.nodes = 0;
 	SearchController.fh = 0;
 	SearchController.fhf = 0;
@@ -230,15 +230,12 @@ function searchPosition(game){
 
         console.log("Score: "+bestScore );
 
-        if(bestScore == 75000){
-            console.log("A mate was found");
-        }    
-
         if(SearchController.stop == true) {
             console.log("Time Up");
             break;
         }
         console.log(getPvLine(currentDepth, startingHash));
+        console.log("Score: "+bestScore );
          
 
         if(currentDepth != 1){
@@ -249,5 +246,8 @@ function searchPosition(game){
         bestMove = probePvTable(startingHash);    
     }
     console.log("Number of nodes visited is: "+SearchController.nodes);
+    console.log(bestMove.san);
     game.move(bestMove.san);
+
+    return bestMove.san;
 }
